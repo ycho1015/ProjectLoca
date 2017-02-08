@@ -16,6 +16,10 @@ class HomeViewController: UIViewController{
 	//UI Variables
 	var previewView: UIView?
 	
+	let textInput = UITextField()
+	let translationOutput = UILabel()
+	let translateButton = UIButton()
+	let poweredLabel = UILabel()
 	
 	//data variables
 	var captureSession: AVCaptureSession?
@@ -27,7 +31,47 @@ class HomeViewController: UIViewController{
 	override func viewDidLoad() {
 		print("hello world")
 		super.viewDidLoad()
-		BingAPICall(toTranslate: "hello")
+		
+		self.view.addSubview(textInput)
+		textInput.frame = CGRect(x: 0, y: 0, width: 180, height: 30)
+		textInput.center = self.view.center
+		textInput.layer.borderColor = UIColor.gray.cgColor
+		textInput.layer.cornerRadius = 10
+		textInput.layer.borderWidth = 1
+		textInput.font = UIFont.systemFont(ofSize: 12, weight: UIFontWeightThin)
+		
+		translationOutput.frame = CGRect(x: 0, y: 0, width: 180, height: 30)
+		translationOutput.font = UIFont.systemFont(ofSize: 12, weight: UIFontWeightThin)
+		self.view.addSubview(translationOutput)
+		translationOutput.center = self.view.center
+		translationOutput.center.y = textInput.frame.maxY + 30
+		
+		translateButton.frame = CGRect(x: 0, y: 0, width: 80, height: 40)
+		self.view.addSubview(translateButton)
+		translateButton.layer.cornerRadius = 20
+		translateButton.addTarget(self, action: #selector(HomeViewController.translate), for: .touchUpInside)
+		translateButton.center = self.view.center
+		translateButton.center.y = translationOutput.frame.maxY + 30
+		translateButton.backgroundColor = UIColor.green
+		translateButton.setTitle("Translate", for: .normal)
+		
+		
+		self.view.addSubview(poweredLabel)
+		poweredLabel.frame = CGRect(x: self.view.frame.maxX - 200, y: self.view.frame.maxY - 15, width: 200, height: 15)
+		poweredLabel.textAlignment = .right
+		poweredLabel.text = "Powered by Yandex.Translate"
+		poweredLabel.font = UIFont.systemFont(ofSize: 12, weight: UIFontWeightThin)
+		
+		
+	}
+	
+	func translate(){
+		
+		guard let text = textInput.text?.replacingOccurrences(of: " ", with: "+") else{
+			translationOutput.text = "invalid input"
+			return
+		}
+		BingAPICall(word: textInput.text!)
 	}
 	
 	func getVideoAuthorization(){
@@ -106,7 +150,9 @@ class HomeViewController: UIViewController{
 		// Dispose of any resources that can be recreated.
 	}
 	
-	func BingAPICall(toTranslate: String){
+	func BingAPICall(word: String) -> String{
+		
+		let toTranslate = word.replacingOccurrences(of: " ", with: "+")
 		
 		let config = URLSessionConfiguration.default
 		let session = URLSession(configuration: config)
@@ -116,11 +162,11 @@ class HomeViewController: UIViewController{
 		var baseURL: String = "https://translate.yandex.net/api/v1.5/tr.json/translate"
 		let key: String = "trnsl.1.1.20170206T214522Z.d28a904e6f61ba84.aac82dfc3243245cfe6429478e1e72257716f354"
 		let inputLanguage = "en"
-		let outputLanguage = "es"
+		let outputLanguage = "zh"
 		
 		guard let tokenURL: URL = URL(string: "\(baseURL)?key=\(key)&lang=\(inputLanguage)-\(outputLanguage)&text=\(toTranslate)") else{
 			print("error making tokenURL")
-			return
+			return "error"
 		}
 		print(tokenURL)
 		var urlRequest = URLRequest(url: tokenURL)
@@ -140,7 +186,6 @@ class HomeViewController: UIViewController{
 		urlRequest.addValue("a4466e949cde47e585edec2da6b2404b", forHTTPHeaderField: "Ocp-Apim-Subscription-Key")
 		print("url request: \(urlRequest)")
 		*/
-		
 		let task = session.dataTask(with: urlRequest) { (data, response, error) in
 			if response != nil{
 				print("response: \(response)")
@@ -152,8 +197,13 @@ class HomeViewController: UIViewController{
 				print("error at 1\(error)")
 			}else{
 				do{
-					let json = try JSONSerialization.jsonObject(with: data!, options: .allowFragments)
+					let json = try JSONSerialization.jsonObject(with: data!, options: .allowFragments) as! [String: Any]
 					print("we got the json: \(json)")
+					let word = (json["text"] as! [String]).joined()
+					print("our word is: \(word)")
+					DispatchQueue.main.async {
+						self.translationOutput.text = word
+					}
 				}catch{
 					print("error in JSON serialization: \(error)")
 				}
@@ -161,63 +211,9 @@ class HomeViewController: UIViewController{
 		}
 		print("executing api call")
 		task.resume()
+		return "loading"
 	}
-	
-		
-		/*
-		var baseURL: String = "https://translate.yandex.net/api/v1.5/tr/translate"
-		let key: String = "trnsl.1.1.20170206T214522Z.d28a904e6f61ba84.aac82dfc3243245cfe6429478e1e72257716f354"
-		let inputLanguage = english
-		let outputLanguage = chinese
-		
-		let todoEndpoint =	baseURL +
-							"?key=\(key)" +
-							"&lang=\(inputLanguage)-\(outputLanguage)" +
-							"&text=\(textToTranslate)" +
-							"&format=plain"
-		
-		print(todoEndpoint)
-		
-		guard let url = URL(string: todoEndpoint) else {
-			print("Error: cannot create URL")
-			return
-		}
-		
-		let urlRequest = URLRequest(url: url)
-		
-		let session = URLSession.shared
-		
-		let task = session.dataTask(with: urlRequest) { (data, response, error) in
-			print(response)
-			print(data!)
-			
-			guard error == nil else{
-				print(error)
-				return
-			}
-			guard data != nil else{
-				print("no data")
-				return;
-			}
-			do{
-				guard let todo = try? JSONSerialization.jsonObject(with: data!, options: []) else{
-					print("error converting data to JSON")
-					return
-				}
-				print("todo")
-				//print("toDo is \(todo.description)")
-				//guard let todoTitle = todo["text"] as? String else{
-				//	print("could not get title")
-				//	return
-				//}
-				//print("the title is \(todoTitle)")
-			}catch{
-				print("error converting to JSON: \(error)")
-			}
-		}
-		task.resume()	//execute call
-	
-	}*/
-
 }
+
+
 
