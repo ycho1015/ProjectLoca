@@ -9,6 +9,7 @@
 import UIKit
 import AVFoundation
 import Photos
+import Alamofire
 
 class HomeViewController: UIViewController{
 
@@ -21,17 +22,12 @@ class HomeViewController: UIViewController{
 	var captureDevice : AVCaptureDevice?
 	var captureDeviceInput: AVCaptureDeviceInput?
 	var videoPreviewLayer: AVCaptureVideoPreviewLayer?
-	
-	
 	var stillImageOutput: AVCaptureStillImageOutput?
 	
-
-	
 	override func viewDidLoad() {
-		
 		print("hello world")
 		super.viewDidLoad()
-		
+		BingAPICall(toTranslate: "hello")
 	}
 	
 	func getVideoAuthorization(){
@@ -51,7 +47,6 @@ class HomeViewController: UIViewController{
 			});
 		}
 	}
-	
 	func startCapture(){
 		
 		//check for authorization
@@ -106,24 +101,96 @@ class HomeViewController: UIViewController{
 		
 		captureSession?.startRunning()
 	}
-	
-
 	override func didReceiveMemoryWarning() {
 		super.didReceiveMemoryWarning()
 		// Dispose of any resources that can be recreated.
 	}
 	
+	func BingAPICall(toTranslate: String){
+		
+		let config = URLSessionConfiguration.default
+		let session = URLSession(configuration: config)
+		
+		//Yandex translate
+		//let key = "a4466e949cde47e585edec2da6b2404b"
+		var baseURL: String = "https://translate.yandex.net/api/v1.5/tr.json/translate"
+		let key: String = "trnsl.1.1.20170206T214522Z.d28a904e6f61ba84.aac82dfc3243245cfe6429478e1e72257716f354"
+		let inputLanguage = "en"
+		let outputLanguage = "es"
+		
+		guard let tokenURL: URL = URL(string: "\(baseURL)?key=\(key)&lang=\(inputLanguage)-\(outputLanguage)&text=\(toTranslate)") else{
+			print("error making tokenURL")
+			return
+		}
+		print(tokenURL)
+		var urlRequest = URLRequest(url: tokenURL)
+		urlRequest.httpMethod = "GET"
+		print("url request: \(urlRequest)")
+
+		/* Microsoft Translate
+		//let key = "a4466e949cde47e585edec2da6b2404b"
+		guard let tokenURL: URL = URL(string: "https:api.cognitive.microsoft.com/svc/v1.0/issueToken") else{
+		print("error generating key url")
+		return
+		}
+		var urlRequest = URLRequest(url: tokenURL)
+		urlRequest.httpMethod = operation
+		urlRequest.addValue("application/json", forHTTPHeaderField: "Content-Type")
+		urlRequest.addValue("application/jwt", forHTTPHeaderField: "Accept")
+		urlRequest.addValue("a4466e949cde47e585edec2da6b2404b", forHTTPHeaderField: "Ocp-Apim-Subscription-Key")
+		print("url request: \(urlRequest)")
+		*/
+		
+		let task = session.dataTask(with: urlRequest) { (data, response, error) in
+			if response != nil{
+				print("response: \(response)")
+			}
+			if data != nil{
+				print("data: \(data)")
+			}
+			if (error != nil){
+				print("error at 1\(error)")
+			}else{
+				do{
+					let json = try JSONSerialization.jsonObject(with: data!, options: .allowFragments)
+					print("we got the json: \(json)")
+				}catch{
+					print("error in JSON serialization: \(error)")
+				}
+			}
+		}
+		print("executing api call")
+		task.resume()
+	}
 	
-	func practiceAPICall(){
-		let todoEndpoint: String = "https://jsonplaceholder.typicode.com/todos/1"
+		
+		/*
+		var baseURL: String = "https://translate.yandex.net/api/v1.5/tr/translate"
+		let key: String = "trnsl.1.1.20170206T214522Z.d28a904e6f61ba84.aac82dfc3243245cfe6429478e1e72257716f354"
+		let inputLanguage = english
+		let outputLanguage = chinese
+		
+		let todoEndpoint =	baseURL +
+							"?key=\(key)" +
+							"&lang=\(inputLanguage)-\(outputLanguage)" +
+							"&text=\(textToTranslate)" +
+							"&format=plain"
+		
+		print(todoEndpoint)
+		
 		guard let url = URL(string: todoEndpoint) else {
 			print("Error: cannot create URL")
 			return
 		}
+		
 		let urlRequest = URLRequest(url: url)
 		
 		let session = URLSession.shared
+		
 		let task = session.dataTask(with: urlRequest) { (data, response, error) in
+			print(response)
+			print(data!)
+			
 			guard error == nil else{
 				print(error)
 				return
@@ -133,23 +200,24 @@ class HomeViewController: UIViewController{
 				return;
 			}
 			do{
-				guard let todo = try JSONSerialization.jsonObject(with: data!, options: []) as? [String: Any] else{
+				guard let todo = try? JSONSerialization.jsonObject(with: data!, options: []) else{
 					print("error converting data to JSON")
 					return
 				}
-				print("toDo is \(todo.description)")
-				guard let todoTitle = todo["title"] as? String else{
-					print("could not get title")
-					return
-				}
-				print("the title is \(todoTitle)")
+				print("todo")
+				//print("toDo is \(todo.description)")
+				//guard let todoTitle = todo["text"] as? String else{
+				//	print("could not get title")
+				//	return
+				//}
+				//print("the title is \(todoTitle)")
 			}catch{
 				print("error converting to JSON: \(error)")
 			}
 		}
 		task.resume()	//execute call
 	
-	}
+	}*/
 
 }
 
