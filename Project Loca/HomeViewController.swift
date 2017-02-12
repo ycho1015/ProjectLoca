@@ -10,16 +10,18 @@ import UIKit
 import AVFoundation
 import Photos
 import Alamofire
+import SwiftyJSON
 
-class HomeViewController: UIViewController{
+class HomeViewController: UIViewController, UITextFieldDelegate, UIPickerViewDelegate, UIPickerViewDataSource{
 
 	//UI Variables
-	var previewView: UIView?
-	
-	let textInput = UITextField()
-	let translationOutput = UILabel()
-	let translateButton = UIButton()
-	let poweredLabel = UILabel()
+	@IBOutlet weak var imageView: UIImageView!
+	@IBOutlet weak var whatIsThisButton: UIButton!
+	@IBOutlet weak var objectNameLabel: UILabel!
+	@IBOutlet weak var translationOutput: UILabel!
+	@IBOutlet weak var textInput: UITextField!
+	@IBOutlet weak var fromLanguage: UITextField!
+	@IBOutlet weak var translateButton: UIButton!
 	
 	//data variables
 	var captureSession: AVCaptureSession?
@@ -28,52 +30,102 @@ class HomeViewController: UIViewController{
 	var videoPreviewLayer: AVCaptureVideoPreviewLayer?
 	var stillImageOutput: AVCaptureStillImageOutput?
 	
+	let session = URLSession.shared
+	var googleAPIKey = "AIzaSyAA-6h_mKGKUHptGHIoPQLIyR6DkmUk7Dc"
+	var googleURL: URL {
+		return URL(string: "https://vision.googleapis.com/v1/images:annotate?key=\(googleAPIKey)")!
+	}
+
+	
+	var inputLanguage: String = "English"
+	var outputLanguage: String = "Chinese"
+
+	
+	var languages: [String: String] = [
+		"English"	:"en",	"Chinese" : "zh",
+		"Spanish"	:"es",
+		"Azerbaijan":	"az",	"Maltese":	"mt",
+		"Albanian":	"sq",	"Macedonian":	"mk",
+		"Amharic":	"am",	"Maori"		:"mi",
+		"Marathi"	:"mr",
+		"Arabic"	:"ar",	"Mari"		:"mhr",
+		"Armenian":	"hy",	"Mongolian"	:"mn",
+		"Afrikaans":"af",	"German"	:"de",
+		"Basque"	:"eu",	"Nepali"	:"ne",
+		"Bashkir"	:"ba",	"Norwegian"	:"no",
+		"Belarusian":"be",	"Punjabi"	:"pa",
+		"Bengali"	:"bn",	"Papiamento":"pap",
+		"Bulgarian"	:"bg",	"Persian"	:"fa",
+		"Bosnian"	:"bs",	"Polish"	:"pl",
+		"Welsh"		:"cy",	"Portuguese":"pt",
+		"Hungarian"	:"hu",	"Romanian"	:"ro",
+		"Vietnamese":	"vi",	"Russian":"ru",
+		"Haitian (Creole)":	"ht",	"Cebuano":"ceb",
+		"Galician"	:"gl",	"Serbian"	:"sr",
+		"Dutch"		:"nl",	"Sinhala"	:"si",
+		"Hill Mari"	:"mrj",	"Slovakian"	:"sk",
+		"Greek"		:"el",	"Slovenian"	:"sl",
+		"Georgian"	:"ka",	"Swahili"	:"sw",
+		"Gujarati"	:"gu",	"Sundanese" :"su",
+		"Danish"	:"da",	"Tajik"		:"tg",
+		"Hebrew"	:"he",	"Thai"		:"th",
+		"Yiddish"	:"yi",	"Tagalog"	:"tl",
+		"Indonesian":"id",	"Tamil"		:"ta",
+		"Irish"		:"ga",	"Tatar"		:"tt",
+		"Italian"	:"it",	"Telugu"	:"te",
+		"Icelandic"	:"is",	"Turkish"	:"tr",
+		"Udmurt"	:"udm",
+		"Kazakh"	:"kk",	"Uzbek"		:"uz",
+		"Kannada"	:"kn",	"Ukrainian"	:"uk",
+		"Catalan"	:"ca",	"Urdu"		:"ur",
+		"Kyrgyz"	:"ky",	"Finnish"	:"fi",
+		"French"	:"fr",
+		"Korean"	:"ko",	"Hindi"		:"hi",
+		"Xhosa"		:"xh",	"Croatian"	:"hr",
+		"Latin"		:"la",	"Czech"		:"cs",
+		"Latvian"	:"lv",	"Swedish"	:"sv",
+		"Lithuanian":"lt",	"Scottish"	:"gd",
+		"Luxembourgish":"lb","Estonian" :"et",
+		"Malagasy"	:"mg",	"Esperanto"	:"eo",
+		"Malay"		:"ms",	"Javanese"	:"jv",
+		"Malayalam"	:"ml",	"Japanese"	:"ja"
+	]
+	var languagesArray: [String]?
+	
+	var picker: UIPickerView?
+	
 	override func viewDidLoad() {
 		print("hello world")
 		super.viewDidLoad()
 		
-		self.view.addSubview(textInput)
-		textInput.frame = CGRect(x: 0, y: 0, width: 180, height: 30)
-		textInput.center = self.view.center
-		textInput.layer.borderColor = UIColor.gray.cgColor
-		textInput.layer.cornerRadius = 10
-		textInput.layer.borderWidth = 1
-		textInput.font = UIFont.systemFont(ofSize: 12, weight: UIFontWeightThin)
+		imageView.image = #imageLiteral(resourceName: "chair.jpg")
 		
-		translationOutput.frame = CGRect(x: 0, y: 0, width: 180, height: 30)
-		translationOutput.font = UIFont.systemFont(ofSize: 12, weight: UIFontWeightThin)
-		self.view.addSubview(translationOutput)
-		translationOutput.center = self.view.center
-		translationOutput.center.y = textInput.frame.maxY + 30
+		languagesArray = Array(languages.keys)
 		
-		translateButton.frame = CGRect(x: 0, y: 0, width: 80, height: 40)
-		self.view.addSubview(translateButton)
-		translateButton.layer.cornerRadius = 20
-		translateButton.addTarget(self, action: #selector(HomeViewController.translate), for: .touchUpInside)
-		translateButton.center = self.view.center
-		translateButton.center.y = translationOutput.frame.maxY + 30
-		translateButton.backgroundColor = UIColor.green
-		translateButton.setTitle("Translate", for: .normal)
+		picker = UIPickerView(frame: CGRect(x: 0, y: 0, width: view.frame.width, height: 300))
+		picker!.backgroundColor = UIColor.white
 		
+		picker!.showsSelectionIndicator = true
+		picker!.delegate = self
+		picker!.dataSource = self
 		
-		self.view.addSubview(poweredLabel)
-		poweredLabel.frame = CGRect(x: self.view.frame.maxX - 200, y: self.view.frame.maxY - 15, width: 200, height: 15)
-		poweredLabel.textAlignment = .right
-		poweredLabel.text = "Powered by Yandex.Translate"
-		poweredLabel.font = UIFont.systemFont(ofSize: 12, weight: UIFontWeightThin)
+		let toolBar = UIToolbar().ToolbarPicker(mySelect: #selector(HomeViewController.donePicker))
 		
+		fromLanguage.inputView = picker
+		fromLanguage.inputAccessoryView = toolBar
+		fromLanguage.isHidden = false
+		fromLanguage.backgroundColor = UIColor.brown
 		
 	}
-	
-	func translate(){
-		
-		guard let text = textInput.text?.replacingOccurrences(of: " ", with: "+") else{
-			translationOutput.text = "invalid input"
+	@IBAction func whatIsThisButton(_ sender: Any) {
+		guard let image = imageView.image else {
+			print("no image found")
 			return
 		}
-		BingAPICall(word: textInput.text!)
+		callGoogleVision(with: image)
 	}
 	
+	/*
 	func getVideoAuthorization(){
 		if AVCaptureDevice.authorizationStatus(forMediaType: AVMediaTypeVideo) ==  AVAuthorizationStatus.authorized{
 			startCapture()
@@ -91,6 +143,8 @@ class HomeViewController: UIViewController{
 			});
 		}
 	}
+	*/
+	/*capture video (not functional right now
 	func startCapture(){
 		
 		//check for authorization
@@ -144,12 +198,13 @@ class HomeViewController: UIViewController{
 		
 		
 		captureSession?.startRunning()
-	}
+	}*/
 	override func didReceiveMemoryWarning() {
 		super.didReceiveMemoryWarning()
 		// Dispose of any resources that can be recreated.
 	}
 	
+	//translation stuff
 	func BingAPICall(word: String) -> String{
 		
 		let toTranslate = word.replacingOccurrences(of: " ", with: "+")
@@ -161,10 +216,14 @@ class HomeViewController: UIViewController{
 		//let key = "a4466e949cde47e585edec2da6b2404b"
 		var baseURL: String = "https://translate.yandex.net/api/v1.5/tr.json/translate"
 		let key: String = "trnsl.1.1.20170206T214522Z.d28a904e6f61ba84.aac82dfc3243245cfe6429478e1e72257716f354"
-		let inputLanguage = "en"
-		let outputLanguage = "zh"
 		
-		guard let tokenURL: URL = URL(string: "\(baseURL)?key=\(key)&lang=\(inputLanguage)-\(outputLanguage)&text=\(toTranslate)") else{
+		let inCode = languages[inputLanguage]!
+		let outCode = languages[outputLanguage]!
+		
+		print("in code is \(inCode)")
+		print("out code is \(outCode)")
+		
+		guard let tokenURL: URL = URL(string: "\(baseURL)?key=\(key)&lang=\(inCode)-\(outCode)&text=\(toTranslate)") else{
 			print("error making tokenURL")
 			return "error"
 		}
@@ -213,7 +272,162 @@ class HomeViewController: UIViewController{
 		task.resume()
 		return "loading"
 	}
+	@IBAction func translate(_ sender: Any) {
+		
+		guard let text = textInput.text?.replacingOccurrences(of: " ", with: "+") else{
+			translationOutput.text = "invalid input"
+			return
+		}
+		BingAPICall(word: text)
+	}
+	
+	//picker view
+	func numberOfComponents(in pickerView: UIPickerView) -> Int {
+		return 2
+	}
+	func pickerView(_ pickerView: UIPickerView, numberOfRowsInComponent component: Int) -> Int {
+		return languagesArray!.count
+	}
+	func pickerView(_ pickerView: UIPickerView, titleForRow row: Int, forComponent component: Int) -> String? {
+		return languagesArray![row]
+	}
+	func pickerView(_ pickerView: UIPickerView, didSelectRow row: Int, inComponent component: Int) {
+		if component == 0{
+			inputLanguage = languagesArray![row]
+		}else if component == 1{
+			outputLanguage = languagesArray![row]
+		}else{
+			print("error with picker")
+		}
+		fromLanguage.text = "\(inputLanguage) to \(outputLanguage)"
+	}
+	func donePicker(){
+		print("resigning first responder")
+			fromLanguage.resignFirstResponder()
+	}
+	
+	
+	
+	//Google Vision
+	
+	
 }
+//Google Cloud API
+extension HomeViewController{
+	//key: AIzaSyAA-6h_mKGKUHptGHIoPQLIyR6DkmUk7Dc
+	func base64EncodeImage(_ image: UIImage) -> String {
+		guard var imagedata = UIImagePNGRepresentation(image) else{
+			print("error with imageData")
+			return ""
+		}
+		// Resize the image if it exceeds the 2MB API limit
+		if (imagedata.count > 2097152) {
+			let oldSize: CGSize = image.size
+			let newSize: CGSize = CGSize(width: 800, height: oldSize.height / oldSize.width * 800)
+			imagedata = resizeImage(newSize, image: image)
+		}
+		return imagedata.base64EncodedString(options: .endLineWithCarriageReturn)
+	}
+	func callGoogleVision(with pickedImage: UIImage) {
+		print("in call google vision")
+		let imageBase64 =  base64EncodeImage(pickedImage)
+		// Create our request URL
+		var request = URLRequest(url: googleURL)
+		request.httpMethod = "POST"
+		request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+		request.addValue(Bundle.main.bundleIdentifier ?? "", forHTTPHeaderField: "X-Ios-Bundle-Identifier")
+		
+		// Build our API request
+		let jsonRequest = [
+			"requests": [
+				"image": [
+					"content": imageBase64
+				],
+				"features": [
+					[
+						"type": "LABEL_DETECTION",
+						"maxResults": 10
+					]
+				]
+			]
+		]
+		let jsonObject = JSON(jsonDictionary: jsonRequest)
+		
+		// Serialize the JSON
+		guard let data = try? jsonObject.rawData() else {
+			print("error, unable to make json raw data")
+			return
+		}
+		request.httpBody = data
+		// Run the request on a background thread
+		DispatchQueue.global().async { self.runRequestOnBackgroundThread(request) }
+	}
+	func runRequestOnBackgroundThread(_ request: URLRequest) {
+		print("calling google api in background")
+		// run the request
+		
+		let task: URLSessionDataTask = session.dataTask(with: request) { (data, response, error) in
+			guard let data = data, error == nil else {
+				print(error?.localizedDescription ?? "")
+				return
+			}
+			self.analyzeResults(data)
+		}
+		task.resume()
+	}
+	func resizeImage(_ imageSize: CGSize, image: UIImage) -> Data {
+		UIGraphicsBeginImageContext(imageSize)
+		image.draw(in: CGRect(x: 0, y: 0, width: imageSize.width, height: imageSize.height))
+		let newImage = UIGraphicsGetImageFromCurrentImageContext()
+		let resizedImage = UIImagePNGRepresentation(newImage!)
+		UIGraphicsEndImageContext()
+		return resizedImage!
+	}
+	func analyzeResults(_ dataToParse: Data) {
+		print("analyzing results from google api call")
+		// Update UI on the main thread
+		DispatchQueue.main.async(execute: {
+			// Use SwiftyJSON to parse results
+			let json = JSON(data: dataToParse)
+			let errorObj: JSON = json["error"]
+			
+			// Check for errors
+			if (errorObj.dictionaryValue != [:]) {
+				self.objectNameLabel.text = "Error code \(errorObj["code"]): \(errorObj["message"])"
+			} else {
+				// Parse the response
+				print(json)
+				let responses: JSON = json["responses"][0]
+				
+				// Get label annotations
+				let labelAnnotations: JSON = responses["labelAnnotations"]
+				let numLabels: Int = labelAnnotations.count
+				print("we have \(numLabels) labels for this image")
+				var labels: Array<String> = []
+				if numLabels > 0 {
+					self.objectNameLabel.text = labelAnnotations[0]["description"].stringValue
+					if let text = self.objectNameLabel.text?.replacingOccurrences(of: " ", with: "+"){
+						self.translationOutput.text = self.BingAPICall(word: text)
+						return
+					}
+				} else {
+					self.objectNameLabel.text = "No labels found"
+				}
+			}
+		})
+		
+	}
+}
+
+
+
+
+
+
+
+
+
+
 
 
 
