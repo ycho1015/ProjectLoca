@@ -24,11 +24,13 @@ class HomeViewController: UIViewController, UITextFieldDelegate, UIPickerViewDel
 	@IBOutlet weak var translateButton: UIButton!
 	
 	//data variables
-	var captureSession: AVCaptureSession?
+	let captureSession = AVCaptureSession()
+	var error: NSError?
 	var captureDevice : AVCaptureDevice?
 	var captureDeviceInput: AVCaptureDeviceInput?
 	var videoPreviewLayer: AVCaptureVideoPreviewLayer?
-	var stillImageOutput: AVCaptureStillImageOutput?
+	let stillImageOutput = AVCaptureStillImageOutput()
+	
 	
 	let session = URLSession.shared
 	var googleAPIKey = "AIzaSyAA-6h_mKGKUHptGHIoPQLIyR6DkmUk7Dc"
@@ -116,16 +118,22 @@ class HomeViewController: UIViewController, UITextFieldDelegate, UIPickerViewDel
 		fromLanguage.isHidden = false
 		fromLanguage.backgroundColor = UIColor.brown
 		
+		startCapture()
+		
 	}
-	@IBAction func whatIsThisButton(_ sender: Any) {
-		guard let image = imageView.image else {
-			print("no image found")
-			return
+	@IBAction func whatIsThisButton(_sender: Any) {
+		
+		if let videoConnection = stillImageOutput.connection(withMediaType: AVMediaTypeVideo) {
+			stillImageOutput.captureStillImageAsynchronously(from: videoConnection) {
+				(imageDataSampleBuffer, error) -> Void in
+				let imageData = AVCaptureStillImageOutput.jpegStillImageNSDataRepresentation(imageDataSampleBuffer)
+				self.callGoogleVision(with: UIImage(data: imageData!)!)
+			}
 		}
-		callGoogleVision(with: image)
+		//callGoogleVision(with: image)
 	}
 	
-	/*
+	
 	func getVideoAuthorization(){
 		if AVCaptureDevice.authorizationStatus(forMediaType: AVMediaTypeVideo) ==  AVAuthorizationStatus.authorized{
 			startCapture()
@@ -143,62 +151,40 @@ class HomeViewController: UIViewController, UITextFieldDelegate, UIPickerViewDel
 			});
 		}
 	}
-	*/
-	/*capture video (not functional right now
 	func startCapture(){
-		
 		//check for authorization
 		if AVCaptureDevice.authorizationStatus(forMediaType: AVMediaTypeVideo) != AVAuthorizationStatus.authorized{
 			getVideoAuthorization()
 		}
 		
-		//create capture session
-		captureSession = AVCaptureSession()
-		captureSession?.sessionPreset = AVCaptureSessionPresetLow
-		
-		//get video  device
-		var defaultVideoDevice = AVCaptureDevice.defaultDevice(withMediaType: AVMediaTypeVideo)
-		if let backCamera = AVCaptureDevice.defaultDevice(withDeviceType: AVCaptureDeviceType.builtInDualCamera, mediaType: AVMediaTypeVideo, position: .back){
-			defaultVideoDevice = backCamera
-		}
-		
-		//configure device input
-		var deviceInput: AVCaptureDeviceInput?
-		do{
-			deviceInput = try AVCaptureDeviceInput(device: defaultVideoDevice)
-		}catch{
-			print("error: \(error)")
-		}
-		
-		//configure capture session
-		captureSession?.beginConfiguration()
-		if (captureSession?.canAddInput(deviceInput))!{
-			captureSession?.addInput(deviceInput)
-		}
-		let dataOutput = AVCaptureVideoDataOutput()
-		dataOutput.videoSettings = [(kCVPixelBufferPixelFormatTypeKey as NSString) : NSNumber(value: kCVPixelFormatType_420YpCbCr8BiPlanarFullRange as UInt32)] // 3
-		dataOutput.alwaysDiscardsLateVideoFrames = true
-		if (captureSession?.canAddOutput(dataOutput))!{
-			captureSession?.addOutput(dataOutput)
-		}
-		captureSession?.commitConfiguration()
-		//let queue = DispatchQueue(label: "com.invasivecode.videoQueue")
-		//dataOutput.setSampleBufferDelegate(self, queue: queue)
+		let devices = AVCaptureDevice.devices().filter{ ($0 as AnyObject).hasMediaType(AVMediaTypeVideo) && ($0 as AnyObject).position == AVCaptureDevicePosition.back }
+		if let captureDevice = devices.first as? AVCaptureDevice  {
+			do{
+				try captureSession.addInput(AVCaptureDeviceInput(device: captureDevice))
+			}catch{
+				print(error)
+				return
+			}
+			captureSession.sessionPreset = AVCaptureSessionPresetPhoto
+			captureSession.startRunning()
+			stillImageOutput.outputSettings = [AVVideoCodecKey:AVVideoCodecJPEG]
+			if captureSession.canAddOutput(stillImageOutput) {
+				captureSession.addOutput(stillImageOutput)
+			}
+			if let previewLayer = AVCaptureVideoPreviewLayer(session: captureSession) {
+				let viewRect = CGRect(x: (self.view.frame.width-300)/2, y: 20, width: 300, height: 300)
+				var cameraView = UIView(frame: viewRect)
+				self.view.addSubview(cameraView)
+	
+				previewLayer.frame = viewRect
+				previewLayer.videoGravity = AVLayerVideoGravityResizeAspectFill
+				cameraView.layer.addSublayer(previewLayer)
 
-
-		videoPreviewLayer = AVCaptureVideoPreviewLayer(session: captureSession)
-		videoPreviewLayer!.videoGravity = AVLayerVideoGravityResizeAspect
-		videoPreviewLayer!.connection?.videoOrientation = AVCaptureVideoOrientation.portrait
-		
-		previewView = UIView()
-		self.view.addSubview(previewView!)
-		previewView!.frame = self.view.frame
-		videoPreviewLayer?.frame = previewView!.bounds
-		previewView?.layer.addSublayer(videoPreviewLayer!)
-		
-		
-		captureSession?.startRunning()
-	}*/
+				print("cameraLayer should be all good")
+			}
+		}
+	
+	}
 	override func didReceiveMemoryWarning() {
 		super.didReceiveMemoryWarning()
 		// Dispose of any resources that can be recreated.
@@ -305,10 +291,7 @@ class HomeViewController: UIViewController, UITextFieldDelegate, UIPickerViewDel
 		print("resigning first responder")
 			fromLanguage.resignFirstResponder()
 	}
-	
-	
-	
-	//Google Vision
+
 	
 	
 }
