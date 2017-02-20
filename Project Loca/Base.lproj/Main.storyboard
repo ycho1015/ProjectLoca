@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="11762" systemVersion="16D32" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" colorMatched="YES" initialViewController="BYZ-38-t0r">
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="11762" systemVersion="16D32" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" colorMatched="YES" initialViewController="4z6-Hr-Q79">
     <device id="retina4_7" orientation="portrait">
         <adaptation id="fullscreen"/>
     </device>
@@ -10,7 +10,23 @@
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
     <scenes>
-        <!--Home View Controller-->
+        <!--Navigation Controller-->
+        <scene sceneID="KNj-j8-C14">
+            <objects>
+                <navigationController id="4z6-Hr-Q79" sceneMemberID="viewController">
+                    <navigationBar key="navigationBar" contentMode="scaleToFill" id="lFp-33-381">
+                        <rect key="frame" x="0.0" y="0.0" width="375" height="44"/>
+                        <autoresizingMask key="autoresizingMask"/>
+                    </navigationBar>
+                    <connections>
+                        <segue destination="BYZ-38-t0r" kind="relationship" relationship="rootViewController" id="ymL-Am-tex"/>
+                    </connections>
+                </navigationController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="Wli-2d-QHd" userLabel="First Responder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="-702" y="137"/>
+        </scene>
+        <!--Loca-->
         <scene sceneID="tne-QT-ifu">
             <objects>
                 <viewController id="BYZ-38-t0r" customClass="HomeViewController" customModule="Project_Loca" customModuleProvider="target" sceneMemberID="viewController">
@@ -23,30 +39,47 @@
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
                             <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="fl5-XX-f5U" customClass="CameraView" customModule="Project_Loca" customModuleProvider="target">
-                                <rect key="frame" x="16" y="107" width="343" height="540"/>
+                                <rect key="frame" x="0.0" y="136" width="375" height="417"/>
                                 <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
                             </view>
-                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="h5v-Dy-uCo">
-                                <rect key="frame" x="142" y="69" width="90" height="30"/>
-                                <state key="normal" title="Start session"/>
+                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="3z5-95-GeF" customClass="AKPickerView">
+                                <rect key="frame" x="0.0" y="64" width="375" height="64"/>
+                                <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
+                            </view>
+                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="RvE-Sw-udQ">
+                                <rect key="frame" x="97" y="584" width="181" height="56"/>
+                                <constraints>
+                                    <constraint firstAttribute="height" constant="56" id="4lq-GS-WnK"/>
+                                </constraints>
+                                <fontDescription key="fontDescription" type="system" pointSize="21"/>
+                                <state key="normal" title="What's that?"/>
                                 <connections>
-                                    <action selector="startSession:" destination="BYZ-38-t0r" eventType="touchUpInside" id="eDP-4c-fda"/>
+                                    <action selector="pressQuery:" destination="BYZ-38-t0r" eventType="touchUpInside" id="DrU-QD-h7W"/>
                                 </connections>
                             </button>
                         </subviews>
                         <color key="backgroundColor" red="1" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                         <constraints>
-                            <constraint firstItem="fl5-XX-f5U" firstAttribute="top" secondItem="h5v-Dy-uCo" secondAttribute="bottom" constant="8" symbolic="YES" id="1vE-hb-Tz0"/>
-                            <constraint firstItem="fl5-XX-f5U" firstAttribute="leading" secondItem="8bC-Xf-vdC" secondAttribute="leadingMargin" id="69t-Qx-eNb"/>
-                            <constraint firstAttribute="bottom" secondItem="fl5-XX-f5U" secondAttribute="bottom" constant="20" symbolic="YES" id="L02-mC-DgZ"/>
-                            <constraint firstItem="fl5-XX-f5U" firstAttribute="top" secondItem="y3c-jy-aDJ" secondAttribute="bottom" constant="87" id="dDT-vL-lZd"/>
-                            <constraint firstItem="fl5-XX-f5U" firstAttribute="trailing" secondItem="8bC-Xf-vdC" secondAttribute="trailingMargin" id="fgI-EK-Lqx"/>
-                            <constraint firstItem="h5v-Dy-uCo" firstAttribute="centerX" secondItem="fl5-XX-f5U" secondAttribute="centerX" id="xaL-5r-UR2"/>
+                            <constraint firstItem="RvE-Sw-udQ" firstAttribute="leading" secondItem="8bC-Xf-vdC" secondAttribute="leadingMargin" constant="81" id="0Ej-Pg-0uf"/>
+                            <constraint firstItem="3z5-95-GeF" firstAttribute="top" secondItem="y3c-jy-aDJ" secondAttribute="bottom" id="DcP-8J-J4L"/>
+                            <constraint firstItem="wfy-db-euE" firstAttribute="top" secondItem="RvE-Sw-udQ" secondAttribute="bottom" constant="27" id="DfQ-ie-I8b"/>
+                            <constraint firstItem="fl5-XX-f5U" firstAttribute="top" secondItem="3z5-95-GeF" secondAttribute="bottom" constant="8" symbolic="YES" id="EWq-31-QQp"/>
+                            <constraint firstItem="RvE-Sw-udQ" firstAttribute="top" secondItem="fl5-XX-f5U" secondAttribute="bottom" constant="31" id="FCb-Cx-Ey8"/>
+                            <constraint firstAttribute="trailing" secondItem="3z5-95-GeF" secondAttribute="trailing" id="FdM-Z1-hfP"/>
+                            <constraint firstItem="3z5-95-GeF" firstAttribute="leading" secondItem="fl5-XX-f5U" secondAttribute="leading" id="JPA-8W-0Ud"/>
+                            <constraint firstItem="3z5-95-GeF" firstAttribute="leading" secondItem="8bC-Xf-vdC" secondAttribute="leading" id="L23-uz-l0n"/>
+                            <constraint firstItem="3z5-95-GeF" firstAttribute="trailing" secondItem="fl5-XX-f5U" secondAttribute="trailing" id="O1R-Mt-rPE"/>
+                            <constraint firstItem="RvE-Sw-udQ" firstAttribute="centerX" secondItem="fl5-XX-f5U" secondAttribute="centerX" id="idC-R4-lsg"/>
+                            <constraint firstItem="fl5-XX-f5U" firstAttribute="top" secondItem="8bC-Xf-vdC" secondAttribute="top" constant="136" id="pti-hT-dwo"/>
                         </constraints>
                     </view>
+                    <navigationItem key="navigationItem" title="Loca" id="dw1-cq-aGy">
+                        <barButtonItem key="rightBarButtonItem" title="Settings" id="vAn-um-Tfa"/>
+                    </navigationItem>
                     <connections>
-                        <outlet property="previewView" destination="fl5-XX-f5U" id="NwS-Ni-wZP"/>
-                        <outlet property="startButton" destination="h5v-Dy-uCo" id="uLy-Qc-2qD"/>
+                        <outlet property="languagePicker" destination="3z5-95-GeF" id="xtv-7I-yHe"/>
+                        <outlet property="previewView" destination="fl5-XX-f5U" id="hFF-mC-Cw9"/>
+                        <outlet property="queryButton" destination="RvE-Sw-udQ" id="eAM-r6-4p1"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="dkx-z0-nzr" sceneMemberID="firstResponder"/>
