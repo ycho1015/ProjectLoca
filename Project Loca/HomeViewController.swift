@@ -165,7 +165,7 @@ class HomeViewController: UIViewController, UITextFieldDelegate, UIPickerViewDel
 				print(error)
 				return
 			}
-			captureSession.sessionPreset = AVCaptureSessionPresetPhoto
+			captureSession.sessionPreset = AVCaptureSessionPresetLow
 			captureSession.startRunning()
 			stillImageOutput.outputSettings = [AVVideoCodecKey:AVVideoCodecJPEG]
 			if captureSession.canAddOutput(stillImageOutput) {
