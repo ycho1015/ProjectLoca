@@ -42,7 +42,7 @@ class DataInterface: NSObject, DataInterfaceDelegate {
     
     
     //function is called from HomeVC once camera data has arrived.
-    func didReceiveData(data: Data) {        
+    func didReceiveData(data: Data) {
         let dataProvider = CGDataProvider(data: data as CFData)
         let cgImageRef: CGImage! = CGImage(jpegDataProviderSource: dataProvider!, decode: nil, shouldInterpolate: true, intent: .defaultIntent)
         let image = UIImage(cgImage: cgImageRef, scale: 1.0, orientation: UIImageOrientation.right)
