@@ -14,13 +14,12 @@ class ImageRecognitionManager: NSObject, ImageRecognitionDelegate {
     
     static let sharedInstance = ImageRecognitionManager()
     var updateDataInterfaceDelegate: UpdateDataInterfaceDelegate?
+    let finishedImageAnalysis = Notification.Name.init(rawValue: "finishedImageAnalysis")
     
     override init() {
         super.init()
        DataInterface.imageRecognitionDelegate = self
     }
-    
-    var dataInterfaceCallback:(()->())?
     
     var googleAPIKey = "AIzaSyBRjyA574z2Dk_T6IVrLGImH8ThrSB2wqY"
     var googleURL: URL {
@@ -140,7 +139,8 @@ class ImageRecognitionManager: NSObject, ImageRecognitionDelegate {
                     DataInterface.sharedInstance.analyzedImageLabels.append(analyzedLabel)
                 }
                 
-                self.updateDataInterfaceDelegate?.didFinishImageRecognition()
+                //Post a notifcation that the analysis is complete
+                NotificationCenter.default.post(name: self.finishedImageAnalysis, object: nil)
             }
         })
         

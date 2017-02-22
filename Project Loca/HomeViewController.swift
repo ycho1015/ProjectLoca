@@ -11,12 +11,15 @@ import AVFoundation
 import Photos
 import AKPickerView
 
-class HomeViewController: UIViewController {
+class HomeViewController: UIViewController, UpdateUIDelegate {
     
     //IBOutlets
     @IBOutlet weak var queryButton: UIButton!
     @IBOutlet weak var previewView: CameraView!
     @IBOutlet weak var languagePicker: AKPickerView!
+    
+    @IBOutlet weak var inLanguage: UILabel!
+    @IBOutlet weak var outLanguage: UILabel!
     
 	//Camera-related variables
     var sessionIsActive = false
@@ -32,6 +35,8 @@ class HomeViewController: UIViewController {
     
     static var dataIntefaceDelegate: DataInterfaceDelegate?
     static var languageSetupDelegate: LanguageSetupDelegate?
+    static var updateUIDelegate: UpdateUIDelegate?
+
     
 	override func viewDidLoad() {
 		super.viewDidLoad()
@@ -42,13 +47,26 @@ class HomeViewController: UIViewController {
         
         //initializing data interface
         let _ = DataInterface()
+        DataInterface.updateUIDelegate = self
         
         //VISUALS        
+        //camera view
+        inLanguage.text = ""
+        outLanguage.text = ""
+        
         //query button
-        queryButton.layer.borderWidth = 2
+        let blur = UIVisualEffectView(effect: UIBlurEffect(style:
+            UIBlurEffectStyle.prominent))
+        blur.frame = queryButton.bounds
+        blur.isUserInteractionEnabled = false //This allows touches to forward to the button.
+        blur.layer.cornerRadius = 30
+        blur.clipsToBounds = true
+        queryButton.insertSubview(blur, at: 0)
         queryButton.layer.borderColor = UIColor.darkGray.cgColor
+        queryButton.layer.borderWidth = 2
         queryButton.layer.cornerRadius = 30
         queryButton.setTitleColor(UIColor.darkGray, for: .normal)
+        queryButton.backgroundColor = UIColor.white.withAlphaComponent(0.25)
         
         //language picker
         self.languagePicker.dataSource = self
@@ -61,6 +79,14 @@ class HomeViewController: UIViewController {
         self.languagePicker.reloadData()
         self.languagePicker.interitemSpacing = 5
 	}
+    
+    func didReceiveTranslation(input1: String, input2: String) {
+        print("Original: \(input1)")
+        print("Translation: \(input2)")
+        
+        self.inLanguage.text = input1
+        self.outLanguage.text = input2
+    }
     
     @IBAction func pressQuery(_ sender: Any) {
         takePicture()

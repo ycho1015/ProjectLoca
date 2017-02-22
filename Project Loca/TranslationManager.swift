@@ -11,7 +11,10 @@ import UIKit
 
 class TranslationManager: NSObject, TranslationDelegate, LanguageSetupDelegate {
     
+    static let sharedInstance = TranslationManager()
     var translatedLanguage: String?
+    let finshedTranslation = Notification.Name.init(rawValue: "finishedTranslation")
+
     
     override init() {
         super.init()
@@ -38,7 +41,12 @@ class TranslationManager: NSObject, TranslationDelegate, LanguageSetupDelegate {
         let key: String = "trnsl.1.1.20170206T214522Z.d28a904e6f61ba84.aac82dfc3243245cfe6429478e1e72257716f354"
         
         let inCode = "English"
-        let outCode = languages[translatedLanguage!]!
+        var outCode = ""
+        if self.translatedLanguage == nil {
+            outCode = languages["Spanish"]!
+        } else {
+            outCode = languages[translatedLanguage!]!
+        }
         
         print("in code is \(inCode)")
         print("out code is \(outCode)")
@@ -66,10 +74,11 @@ class TranslationManager: NSObject, TranslationDelegate, LanguageSetupDelegate {
                     let json = try JSONSerialization.jsonObject(with: data!, options: .allowFragments) as! [String: Any]
                     print("we got the json: \(json)")
                     let word = (json["text"] as! [String]).joined()
-                    print("our word is: \(word)")
-                    DispatchQueue.main.async {
-//                        self.translationOutput.text = word
+                    DispatchQueue.main.async(){
+                        DataInterface.sharedInstance.translatedImageLabels.append(word)
+                        NotificationCenter.default.post(name: self.finshedTranslation, object: nil)
                     }
+                    
                 }catch{
                     print("error in JSON serialization: \(error)")
                 }

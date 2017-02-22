@@ -9,7 +9,7 @@
 import Foundation
 import UIKit
 
-class DataInterface: NSObject, DataInterfaceDelegate, UpdateDataInterfaceDelegate {
+class DataInterface: NSObject, DataInterfaceDelegate {
     
     //This class receives raw camera data and delegates both the image recognition and translation tasks.
     //returns back the information to the main VC.
@@ -18,7 +18,10 @@ class DataInterface: NSObject, DataInterfaceDelegate, UpdateDataInterfaceDelegat
     static var imageRecognitionDelegate: ImageRecognitionDelegate?
     static var translationDelegate: TranslationDelegate?
     static var updateUIDelegate: UpdateUIDelegate?
-    static var updateDataInterfaceDelegate: UpdateDataInterfaceDelegate?
+    
+    //instances
+    var imageRecognitionManager = ImageRecognitionManager()
+    var translationManager = TranslationManager()
     
     //data storage variables
     var analyzedImageLabels = [String]()
@@ -27,37 +30,42 @@ class DataInterface: NSObject, DataInterfaceDelegate, UpdateDataInterfaceDelegat
     override init() {
         super.init()
         HomeViewController.dataIntefaceDelegate = self
-        ImageRecognitionManager.sharedInstance.updateDataInterfaceDelegate = self
-        //initialization
-        let _ = ImageRecognitionManager()
-        let _ = TranslationManager()
-        
-        ImageRecognitionManager.sharedInstance.dataInterfaceCallback = {
-            print("I got the delegate!")
-        }
+        NotificationCenter.default.addObserver(self,
+                                               selector: #selector(self.sendDataToTranslator),
+                                               name: ImageRecognitionManager.sharedInstance.finishedImageAnalysis,
+                                               object: nil)
+        NotificationCenter.default.addObserver(self,
+                                               selector: #selector(self.updateUIWithTranslation),
+                                               name: TranslationManager.sharedInstance.finshedTranslation,
+                                               object: nil)
     }
     
     
     //function is called from HomeVC once camera data has arrived.
-    func didReceiveData(data: Data) {
+    func didReceiveData(data: Data) {        
         let dataProvider = CGDataProvider(data: data as CFData)
         let cgImageRef: CGImage! = CGImage(jpegDataProviderSource: dataProvider!, decode: nil, shouldInterpolate: true, intent: .defaultIntent)
         let image = UIImage(cgImage: cgImageRef, scale: 1.0, orientation: UIImageOrientation.right)
         
         //sends data as an image to the image recognition delegate
         DataInterface.imageRecognitionDelegate?.didReceiveImage(image: image)
+        
     }
     
     //this is called once the image recognition is finished.
-    func didFinishImageRecognition() {
-        print("finished image recognition")
-        print(analyzedImageLabels)
+    func sendDataToTranslator() {
+        print("About to send data!")
         DataInterface.translationDelegate?.didReceiveText(input: analyzedImageLabels.first!)
     }
     
-    //setup this delegate later
-    func didReceiveTranslation() {
-        
+    //this is called once the translation is finished
+    func updateUIWithTranslation(){
+        print("Sending to UI!")
+        print("Analyzed image labels: \(analyzedImageLabels)")
+        print("Translated image labels: \(translatedImageLabels)")
+        DataInterface.updateUIDelegate?.didReceiveTranslation(
+            input1: analyzedImageLabels.first!,
+            input2: translatedImageLabels.last!)
     }
     
 }

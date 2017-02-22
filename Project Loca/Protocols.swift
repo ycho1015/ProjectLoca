@@ -35,6 +35,6 @@ protocol LanguageSetupDelegate {
 }
 
 protocol UpdateUIDelegate {
-    func willReceiveImage(image: UIImage)
-    func willReceiveTranslation(input: String)
+    //the "..." means any amount of strings
+    func didReceiveTranslation(input1: String, input2: String)
 }
