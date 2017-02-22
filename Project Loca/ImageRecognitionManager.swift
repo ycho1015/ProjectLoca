@@ -10,29 +10,27 @@ import Foundation
 import UIKit
 import SwiftyJSON
 
-class ImageRecognitionManager: NSObject, ImageRecognitionDelegate {
+class ImageRecognitionManager: NSObject{
     
     static let sharedInstance = ImageRecognitionManager()
-    var updateDataInterfaceDelegate: UpdateDataInterfaceDelegate?
     
     override init() {
         super.init()
-       DataInterface.imageRecognitionDelegate = self
+		//DataInterface.imageRecognitionDelegate = self
     }
     
-    var dataInterfaceCallback:(()->())?
+	//var dataInterfaceCallback:(()->())?
     
     var googleAPIKey = "AIzaSyBRjyA574z2Dk_T6IVrLGImH8ThrSB2wqY"
     var googleURL: URL {
         return URL(string: "https://vision.googleapis.com/v1/images:annotate?key=\(googleAPIKey)")!
     }
     
-    //custom delegate
-    func didReceiveImage(image: UIImage) {
-        callGoogleVision(with: image)
-    }
-    
-    func callGoogleVision(with pickedImage: UIImage) {
+    //This function is passed images from elsewhere in app, passes data to another function that calls google. We 'forward' the completion handler to the callGoogleVision function
+	func processImage(image: UIImage, completion: @escaping ([String]) -> Void) {
+		callGoogleVision(with: image, completion: completion)
+	}
+	fileprivate func callGoogleVision(with pickedImage: UIImage, completion: @escaping ([String]) -> Void) {
         print("Calling google vision")
         let imageBase64 =  base64EncodeImage(pickedImage)
         // Create our request URL
@@ -63,26 +61,30 @@ class ImageRecognitionManager: NSObject, ImageRecognitionDelegate {
             return
         }
         request.httpBody = data
-        // Run the request on a background thread
-        DispatchQueue.global().async { self.runRequestOnBackgroundThread(request) }
+        // Run the request on a background thread and forward the completion handler
+		DispatchQueue.global().async { self.runRequestOnBackgroundThread(request, completion: completion) }
     }
-    
-    func runRequestOnBackgroundThread(_ request: URLRequest) {
+	func runRequestOnBackgroundThread(_ request: URLRequest, completion: @escaping ([String]) -> Void) {
         print("calling google api in background")
         // run the request
-        
         let task: URLSessionDataTask = HomeViewController.session.dataTask(with: request) { (data, response, error) in
-            guard let data = data, error == nil else {
-                print(error?.localizedDescription ?? "")
-                return
+			if (error != nil){
+				print("error at 1\(error) cannot complete task")
+			}else{
+				do{
+					let json = try JSONSerialization.jsonObject(with: data!, options: .allowFragments) as! [String: Any]
+					print("we got the json: \(json)")
+					let words = (json["text"] as! [String]).joined()
+					print("our words are: \(words)")
+					completion([words]) //execute whatever function was passed to us with this data as the parameter
+				}catch{
+					print("error in JSON serialization: \(error)")
+				}
             }
-            self.analyzeResults(data)
         }
         task.resume()
     }
-    
     func base64EncodeImage(_ image: UIImage) -> String {
-        
         guard var imagedata = UIImagePNGRepresentation(image) else{
             print("error with imageData")
             return ""
@@ -95,7 +97,6 @@ class ImageRecognitionManager: NSObject, ImageRecognitionDelegate {
         }
         return imagedata.base64EncodedString(options: .endLineWithCarriageReturn)
     }
-    
     func resizeImage(_ imageSize: CGSize, image: UIImage) -> Data {
         UIGraphicsBeginImageContext(imageSize)
         image.draw(in: CGRect(x: 0, y: 0, width: imageSize.width, height: imageSize.height))
@@ -103,46 +104,5 @@ class ImageRecognitionManager: NSObject, ImageRecognitionDelegate {
         let resizedImage = UIImagePNGRepresentation(newImage!)
         UIGraphicsEndImageContext()
         return resizedImage!
-    }
-    
-    func analyzeResults(_ dataToParse: Data) {
-        print("analyzing results from google api call")
-        DataInterface.sharedInstance.analyzedImageLabels.removeAll()
-
-        
-        // Update UI on the main thread
-        DispatchQueue.main.async(execute: {
-            // Use SwiftyJSON to parse results
-            let json = JSON(data: dataToParse)
-            let errorObj: JSON = json["error"]
-            
-            // Check for errors
-            if (errorObj.dictionaryValue != [:]) {
-                print("Error code \(errorObj["code"]): \(errorObj["message"])")
-            } else {
-                // Parse the response
-                let responses: JSON = json["responses"][0]
-                
-                // Get label annotations
-                let labelAnnotations: JSON = responses["labelAnnotations"]
-                let numLabels = labelAnnotations.count
-                var labels = [String]()
-                print("we have \(numLabels) labels for this image")
-                
-                guard numLabels > 0 else {
-                    print("no results")
-                    return
-                }
-                
-                for label in labelAnnotations {
-                    let analyzedLabel = label.1["description"].stringValue
-                    print(analyzedLabel)
-                    DataInterface.sharedInstance.analyzedImageLabels.append(analyzedLabel)
-                }
-                
-                self.updateDataInterfaceDelegate?.didFinishImageRecognition()
-            }
-        })
-        
     }
 }

@@ -9,25 +9,16 @@
 import Foundation
 import UIKit
 
-class TranslationManager: NSObject, TranslationDelegate, LanguageSetupDelegate {
-    
+class TranslationManager: NSObject{
+	
+	static let sharedInstance = TranslationManager()
     var translatedLanguage: String?
-    
-    override init() {
-        super.init()
-        DataInterface.translationDelegate = self
-        HomeViewController.languageSetupDelegate = self
+	
+	func didReceiveText(input: [String], completion: @escaping ([String]) -> Void) {
+		YandexAPICall(word: input[0], completion: completion)
     }
     
-    func didReceiveText(input: String) {
-        YandexAPICall(word: input)
-    }
-    
-    func didChangeLanguage(language: String) {
-        self.translatedLanguage = language
-    }
-    
-    func YandexAPICall(word: String) -> String{
+fileprivate	func YandexAPICall(word: String, completion: @escaping ([String]) -> Void){
         
         let toTranslate = word.replacingOccurrences(of: " ", with: "+")
         
@@ -45,7 +36,7 @@ class TranslationManager: NSObject, TranslationDelegate, LanguageSetupDelegate {
         
         guard let tokenURL: URL = URL(string: "\(baseURL)?key=\(key)&lang=\(inCode)-\(outCode)&text=\(toTranslate)") else{
             print("error making tokenURL")
-            return "error"
+            return
         }
         print(tokenURL)
         var urlRequest = URLRequest(url: tokenURL)
@@ -67,9 +58,7 @@ class TranslationManager: NSObject, TranslationDelegate, LanguageSetupDelegate {
                     print("we got the json: \(json)")
                     let word = (json["text"] as! [String]).joined()
                     print("our word is: \(word)")
-                    DispatchQueue.main.async {
-//                        self.translationOutput.text = word
-                    }
+					completion([word])
                 }catch{
                     print("error in JSON serialization: \(error)")
                 }
@@ -77,7 +66,6 @@ class TranslationManager: NSObject, TranslationDelegate, LanguageSetupDelegate {
         }
         print("executing api call")
         task.resume()
-        return "loading"
     }
     
     var languages: [String: String] = [

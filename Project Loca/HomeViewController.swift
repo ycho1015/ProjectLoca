@@ -30,7 +30,6 @@ class HomeViewController: UIViewController {
     static let session = URLSession.shared
     let sessionQueue = DispatchQueue(label: "session queue", attributes: [], target: nil) // Communicate with the session and other session objects on this queue.
     
-    static var dataIntefaceDelegate: DataInterfaceDelegate?
     static var languageSetupDelegate: LanguageSetupDelegate?
     
 	override func viewDidLoad() {
@@ -126,7 +125,6 @@ class HomeViewController: UIViewController {
             sessionIsActive = false
         }
     }
-    
 	func getVideoAuthorization(){
 		if AVCaptureDevice.authorizationStatus(forMediaType: AVMediaTypeVideo) ==  AVAuthorizationStatus.authorized{
             print("already authorized")
@@ -155,7 +153,9 @@ extension HomeViewController: AVCapturePhotoCaptureDelegate {
             let dataImage =  AVCapturePhotoOutput.jpegPhotoDataRepresentation(forJPEGSampleBuffer:  sampleBuffer, previewPhotoSampleBuffer: previewBuffer) {
             
             //SENDING IMAGE TO DATA INTEFACE
-            HomeViewController.dataIntefaceDelegate?.didReceiveData(data: dataImage)
+            DataInterface.sharedInstance.imageDataToTranslation(data: dataImage, completion: { (translations) in
+				print("finished with \(translations). time to update UI")
+			})
             
         } else {
             print("some error here")
