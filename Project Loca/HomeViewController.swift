@@ -13,7 +13,7 @@ import Alamofire
 import SwiftyJSON
 
 class HomeViewController: UIViewController, UITextFieldDelegate, UIPickerViewDelegate, UIPickerViewDataSource{
-
+	
 	//UI Variables
 	@IBOutlet weak var imageView: UIImageView!
 	@IBOutlet weak var whatIsThisButton: UIButton!
@@ -97,7 +97,8 @@ class HomeViewController: UIViewController, UITextFieldDelegate, UIPickerViewDel
 	var picker: UIPickerView?
 	
 	override func viewDidLoad() {
-		print("hello world")
+
+		
 		super.viewDidLoad()
 		
 		imageView.image = #imageLiteral(resourceName: "chair.jpg")
