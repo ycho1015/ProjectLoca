@@ -47,9 +47,9 @@
                                 <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
                             </view>
                             <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="RvE-Sw-udQ">
-                                <rect key="frame" x="97" y="591" width="181" height="56"/>
+                                <rect key="frame" x="127.5" y="590" width="119" height="60"/>
                                 <constraints>
-                                    <constraint firstAttribute="height" constant="56" id="Wq7-vn-2y7"/>
+                                    <constraint firstAttribute="height" constant="60" id="tVB-CC-YdN"/>
                                 </constraints>
                                 <fontDescription key="fontDescription" type="system" pointSize="21"/>
                                 <state key="normal" title="What's that?"/>
@@ -72,11 +72,9 @@
                         </subviews>
                         <color key="backgroundColor" red="1" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                         <constraints>
-                            <constraint firstItem="fl5-XX-f5U" firstAttribute="centerX" secondItem="RvE-Sw-udQ" secondAttribute="centerX" id="19c-I6-wXP"/>
-                            <constraint firstItem="RvE-Sw-udQ" firstAttribute="top" secondItem="fl5-XX-f5U" secondAttribute="bottom" constant="15" id="IT3-07-Zqx"/>
+                            <constraint firstItem="wfy-db-euE" firstAttribute="top" secondItem="RvE-Sw-udQ" secondAttribute="bottom" constant="17" id="BEf-Hi-Ii9"/>
                             <constraint firstItem="aAX-3r-ZaR" firstAttribute="baseline" secondItem="jTA-v5-Bk6" secondAttribute="baseline" id="J8R-pN-P1S"/>
                             <constraint firstAttribute="trailing" secondItem="3z5-95-GeF" secondAttribute="trailing" id="Jx4-hk-mtk"/>
-                            <constraint firstAttribute="bottom" secondItem="RvE-Sw-udQ" secondAttribute="bottom" constant="20" symbolic="YES" id="L5J-A3-fwz"/>
                             <constraint firstItem="fl5-XX-f5U" firstAttribute="top" secondItem="aAX-3r-ZaR" secondAttribute="bottom" constant="19" id="M8A-ym-O1b"/>
                             <constraint firstItem="3z5-95-GeF" firstAttribute="top" secondItem="y3c-jy-aDJ" secondAttribute="bottom" id="P7G-02-qEc"/>
                             <constraint firstItem="3z5-95-GeF" firstAttribute="leading" secondItem="8bC-Xf-vdC" secondAttribute="leading" id="QMP-3k-nBF"/>
@@ -84,9 +82,10 @@
                             <constraint firstItem="3z5-95-GeF" firstAttribute="trailing" secondItem="fl5-XX-f5U" secondAttribute="trailing" id="Tne-hA-Sjr"/>
                             <constraint firstAttribute="trailingMargin" secondItem="jTA-v5-Bk6" secondAttribute="trailing" constant="53" id="WrI-iV-fR3"/>
                             <constraint firstItem="aAX-3r-ZaR" firstAttribute="top" secondItem="3z5-95-GeF" secondAttribute="bottom" constant="8" symbolic="YES" id="ZCO-qA-058"/>
-                            <constraint firstItem="RvE-Sw-udQ" firstAttribute="leading" secondItem="8bC-Xf-vdC" secondAttribute="leadingMargin" constant="81" id="dbX-LP-LYo"/>
+                            <constraint firstItem="RvE-Sw-udQ" firstAttribute="centerX" secondItem="fl5-XX-f5U" secondAttribute="centerX" id="cp3-0B-eMO"/>
                             <constraint firstItem="aAX-3r-ZaR" firstAttribute="leading" secondItem="8bC-Xf-vdC" secondAttribute="leadingMargin" constant="50" id="eH8-hP-4cz"/>
                             <constraint firstItem="aAX-3r-ZaR" firstAttribute="top" secondItem="8bC-Xf-vdC" secondAttribute="top" constant="136" id="ekt-jh-zZ1"/>
+                            <constraint firstItem="RvE-Sw-udQ" firstAttribute="top" secondItem="fl5-XX-f5U" secondAttribute="bottom" constant="14" id="pBI-Wo-bMF"/>
                         </constraints>
                     </view>
                     <navigationItem key="navigationItem" title="Loca" id="dw1-cq-aGy">

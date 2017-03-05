@@ -9,14 +9,19 @@
 import Foundation
 import UIKit
 
+//enum of analysis methods
+enum analysisMethod {
+    case google_api, metal_cnn
+}
+
 //Called from the MainVC -> Data Interface
 protocol DataInterfaceDelegate {
-    func didReceiveData(data: Data)
+    func didReceiveData(analysisMethod: analysisMethod, data: Data)
 }
 
 //Called from Data Interface -> ImageRecognition
 protocol ImageRecognitionDelegate {
-    func didReceiveImage(image: UIImage)
+    func didReceiveImage(analysisMethod: analysisMethod, image: UIImage)
 }
 
 

@@ -9,12 +9,25 @@
 import Foundation
 import UIKit
 import SwiftyJSON
+import MetalKit
+import MetalPerformanceShaders
+import Accelerate
 
 class ImageRecognitionManager: NSObject, ImageRecognitionDelegate {
     
     static let sharedInstance = ImageRecognitionManager()
     var updateDataInterfaceDelegate: UpdateDataInterfaceDelegate?
     let finishedImageAnalysis = Notification.Name.init(rawValue: "finishedImageAnalysis")
+    
+    //neural network variables
+    //neural network
+    var inception3Net: Inception3Net!
+    var device: MTLDevice?
+    var commandQueue: MTLCommandQueue!
+    
+    var textureLoader : MTKTextureLoader!
+    var ciContext : CIContext!
+    var sourceTexture : MTLTexture? = nil
     
     override init() {
         super.init()
@@ -27,10 +40,16 @@ class ImageRecognitionManager: NSObject, ImageRecognitionDelegate {
     }
     
     //custom delegate
-    func didReceiveImage(image: UIImage) {
-        callGoogleVision(with: image)
+    func didReceiveImage(analysisMethod: analysisMethod, image: UIImage) {
+        switch analysisMethod {
+            case .google_api:
+                callGoogleVision(with: image)
+            case .metal_cnn:
+                print("need to refactor neural network")
+        }
     }
-    
+        
+    //GOOGLE VISION API
     func callGoogleVision(with pickedImage: UIImage) {
         print("Calling google vision")
         let imageBase64 =  base64EncodeImage(pickedImage)

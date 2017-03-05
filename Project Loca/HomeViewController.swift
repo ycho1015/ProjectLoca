@@ -10,6 +10,10 @@ import UIKit
 import AVFoundation
 import Photos
 import AKPickerView
+import MetalKit
+import MetalPerformanceShaders
+import Accelerate
+
 
 class HomeViewController: UIViewController, UpdateUIDelegate {
     
@@ -28,6 +32,15 @@ class HomeViewController: UIViewController, UpdateUIDelegate {
     
     //for picker view
     let languages = ["Spanish", "French", "Italian", "Japanese", "Chinese"]
+    
+    //neural network
+    var inception3Net: Inception3Net!
+    var device: MTLDevice?
+    var commandQueue: MTLCommandQueue!
+    
+    var textureLoader : MTKTextureLoader!
+    var ciContext : CIContext!
+    var sourceTexture : MTLTexture? = nil
 
     
     static let session = URLSession.shared
@@ -54,21 +67,16 @@ class HomeViewController: UIViewController, UpdateUIDelegate {
         inLanguage.text = ""
         outLanguage.text = ""
         
-        //query button
-        let blur = UIVisualEffectView(effect: UIBlurEffect(style:
-            UIBlurEffectStyle.prominent))
-        blur.frame = queryButton.bounds
-        blur.isUserInteractionEnabled = false //This allows touches to forward to the button.
-        blur.layer.cornerRadius = 30
-        blur.clipsToBounds = true
-        queryButton.insertSubview(blur, at: 0)
+        //Query button
         queryButton.layer.borderColor = UIColor.darkGray.cgColor
         queryButton.layer.borderWidth = 2
         queryButton.layer.cornerRadius = 30
         queryButton.setTitleColor(UIColor.darkGray, for: .normal)
         queryButton.backgroundColor = UIColor.white.withAlphaComponent(0.25)
+        queryButton.frame = CGRect(x: 97, y: 590, width: 200, height: 60)
+
         
-        //language picker
+        //Language Picker
         self.languagePicker.dataSource = self
         self.languagePicker.delegate = self
         
@@ -78,7 +86,32 @@ class HomeViewController: UIViewController, UpdateUIDelegate {
         self.languagePicker.isMaskDisabled = false
         self.languagePicker.reloadData()
         self.languagePicker.interitemSpacing = 5
+        
+        //Neural Network
+        // Load default device.
+        device = MTLCreateSystemDefaultDevice()
+        
+        // Make sure the current device supports MetalPerformanceShaders.
+        guard MPSSupportsMTLDevice(device) else {
+            showAlert(title: "Not Supported", message: "MetalPerformanceShaders is not supported on current device", handler: { (action) in
+                self.navigationController!.popViewController(animated: true)
+            })
+            return
+        }
+        
+        // Create new command queue.
+        commandQueue = device?.makeCommandQueue()
+        
+        // make a textureLoader to get our input images as MTLTextures
+        textureLoader = MTKTextureLoader(device: device!)
+        
+        // Load the appropriate Network
+        inception3Net = Inception3Net(withCommandQueue: commandQueue)
+        
+        // we use this CIContext as one of the steps to get a MTLTexture
+        ciContext = CIContext.init(mtlDevice: device!)
 	}
+    
     
     func didReceiveTranslation(input1: String, input2: String) {
         print("Original: \(input1)")
@@ -86,14 +119,64 @@ class HomeViewController: UIViewController, UpdateUIDelegate {
         
         self.inLanguage.text = input1
         self.outLanguage.text = input2
+        
+        UIView.animate(withDuration: 0.75, delay: 0.0, usingSpringWithDamping: 20, initialSpringVelocity: 20, options: .curveEaseInOut, animations: {
+            
+                print("Showing mic button")
+                let newX = self.queryButton.frame.width/1.5 + self.queryButton.frame.minX/1.5
+                self.queryButton.frame = CGRect(x: newX, y: 590, width: 100, height: 60)
+                self.queryButton.setTitle("Mic", for: .normal)
+            
+        }) { (Bool) in
+            print("Completed animation")
+            UIView.animate(withDuration: 0.75, animations: {
+                self.queryButton.frame = CGRect(x: 97, y: 590, width: 200, height: 60)
+                self.queryButton.setTitle("What's that?", for: .normal)
+
+            })
+        }
+
     }
     
     @IBAction func pressQuery(_ sender: Any) {
         takePicture()
     }
     
-    let photoOutput = AVCapturePhotoOutput()
+    func runNetwork(completion: @escaping (_ completed: Bool) -> Void) {
+        let startTime = CACurrentMediaTime()
+        
+        // to deliver optimal performance we leave some resources used in MPSCNN to be released at next call of autoreleasepool,
+        // so the user can decide the appropriate time to release this
+        autoreleasepool{
+            // encoding command buffer
+            let commandBuffer = commandQueue.makeCommandBuffer()
+            
+            // encode all layers of network on present commandBuffer, pass in the input image MTLTexture
+            inception3Net.forward(commandBuffer: commandBuffer, sourceTexture: sourceTexture)
+            
+            // commit the commandBuffer and wait for completion on CPU
+            commandBuffer.commit()
+            commandBuffer.waitUntilCompleted()
+            
+            // display top-5 predictions for what the object should be labelled
+            var resultStr = ""
+            
+            inception3Net.getResults().forEach({ (label,prob) in
+                resultStr = resultStr + label + "\t" + String(format: "%.1f", prob * 100) + "%\n\n"
+            })
+            
+            DispatchQueue.main.async {
+                self.inLanguage.text = resultStr
+            }
+        }
+        
+        let endTime = CACurrentMediaTime()
+        print("Running Time: \(endTime - startTime) [sec]")
+        completion(true)
+    }
+
     
+    let photoOutput = AVCapturePhotoOutput()
     func takePicture() {
         let settings = AVCapturePhotoSettings()
         let previewPixelType = settings.availablePreviewPhotoPixelFormatTypes.first!
@@ -102,9 +185,10 @@ class HomeViewController: UIViewController, UpdateUIDelegate {
                              kCVPixelBufferHeightKey as String: 160,
                              ]
         settings.previewPhotoFormat = previewFormat
+        
         self.photoOutput.capturePhoto(with: settings, delegate: self)
     }
-    
+
     func startSession() {
         if !sessionIsActive {
             captureSession = AVCaptureSession()
@@ -179,9 +263,47 @@ extension HomeViewController: AVCapturePhotoCaptureDelegate {
         if  let sampleBuffer = photoSampleBuffer,
             let previewBuffer = previewPhotoSampleBuffer,
             let dataImage =  AVCapturePhotoOutput.jpegPhotoDataRepresentation(forJPEGSampleBuffer:  sampleBuffer, previewPhotoSampleBuffer: previewBuffer) {
+
+            let dataProvider = CGDataProvider(data: dataImage as CFData)
+            guard let cgImage = CGImage(jpegDataProviderSource: dataProvider!, decode: nil, shouldInterpolate: true, intent: .defaultIntent) else {
+                print("couldn't get an image")
+                
+                return
+            }
             
-            //SENDING IMAGE TO DATA INTEFACE
-            HomeViewController.dataIntefaceDelegate?.didReceiveData(data: dataImage)
+            // get a texture from this CGImage
+            do {
+                self.sourceTexture = try self.textureLoader.newTexture(with: cgImage, options: [:])
+            }
+            catch let error as NSError {
+                fatalError("Unexpected error ocurred: \(error.localizedDescription).")
+            }
+            
+            // run inference neural network to get predictions and display them
+            self.runNetwork(completion: { (gotData) in
+                guard gotData else {
+                    print("didn't get data")
+                    return
+                }
+                
+                print("just got the data! starting animation")
+                UIView.animate(withDuration: 0.75, delay: 0.0, usingSpringWithDamping: 20, initialSpringVelocity: 20, options: .curveEaseInOut, animations: {
+                    
+                    print("Showing mic button")
+                    let newX = self.queryButton.frame.width/1.5 + self.queryButton.frame.minX/1.5
+                    self.queryButton.frame = CGRect(x: newX, y: 590, width: 100, height: 60)
+                    self.queryButton.setTitle("Mic", for: .normal)
+                    
+                }) { (Bool) in
+                    print("Completed animation")
+                    UIView.animate(withDuration: 0.75, animations: {
+                        self.queryButton.frame = CGRect(x: 97, y: 590, width: 200, height: 60)
+                        self.queryButton.setTitle("What's that?", for: .normal)
+                        
+                    })
+                }
+            })
+            
             
         } else {
             print("some error here")
